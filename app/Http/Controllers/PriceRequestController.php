@@ -18,7 +18,7 @@ class PriceRequestController extends Controller
             $priceRequests = PriceRequest::all();
 
             return response()->json([
-                'status' => 'success',
+                'status' => 'successfull',
                 'data' => $priceRequests
             ], 200);
         } catch (\Throwable $th) {
