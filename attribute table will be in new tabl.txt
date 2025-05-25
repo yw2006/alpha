@@ -1,0 +1,10 @@
+attribute table will be in new table , value in new table
+reposible person table
+invoice -> (customer information, مندوب , products => quantity, prices , total , discount type,discont value , sub total , tax, net price,payment type  )
+payment
+admin
+accountent invoices , salas orders 
+salses 
+driver
+store manger -> category - product - vendors 
+operation

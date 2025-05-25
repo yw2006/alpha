@@ -4,13 +4,15 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
-class User extends Authenticatable
+use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Contracts\Auth\CanResetPassword;
+class User extends Authenticatable implements CanResetPassword
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes,HasApiTokens;
 
     /**
      * The attributes that are mass assignable.
@@ -19,8 +21,16 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        "arName",
         'email',
         'password',
+        "role_id",
+        'phone', 
+        'address',
+        "arAddress" ,
+        'image_url', 
+        'advised_by', 
+            "status"
     ];
 
     /**
@@ -28,11 +38,10 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $hidden = [
+protected $hidden = [
         'password',
         'remember_token',
     ];
-
     /**
      * Get the attributes that should be cast.
      *
@@ -45,4 +54,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function role()
+    {
+        return $this->BelongsTo(Role::class);
+    }
+
 }
