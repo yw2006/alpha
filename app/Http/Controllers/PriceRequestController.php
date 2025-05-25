@@ -4,71 +4,172 @@ namespace App\Http\Controllers;
 
 use App\Models\PriceRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PriceRequestController extends Controller
 {
-    // List all price requests
+    /**
+     * Display a listing of the resource.
+     */
     public function index()
     {
-        $priceRequests = PriceRequest::with(['company', 'creator'])->latest()->get();
-        return response()->json($priceRequests);
+        try {
+            $priceRequests = PriceRequest::all();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $priceRequests
+            ], 200);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
     }
 
-    // Store a new price request
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'customer_notes' => 'nullable|string',
-            'company_id' => 'required|exists:companies,id',
-            'created_by' => 'required|exists:users,id',
-            'image' => 'nullable|image|max:2048',
-            'status' => 'in:pending,approved,rejected',
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'customer_notes' => 'nullable|string',
+                'company_id' => 'required|exists:companies,id',
+                'created_by' => 'required|exists:users,id',
+                'image' => 'nullable|image|max:2048',
+                'status' => 'nullable|in:pending,approved,rejected'
+            ]);
 
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('price_requests', 'public');
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $data = $validator->validated();
+
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('price_requests', 'public');
+            }
+
+            $priceRequest = PriceRequest::create($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Price request created successfully',
+                'data' => $priceRequest
+            ], 201);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
         }
-
-        $priceRequest = PriceRequest::create($validated);
-
-        return response()->json($priceRequest, 201);
     }
 
-    // Show a specific price request
-    public function show($id)
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
     {
-        $priceRequest = PriceRequest::with(['company', 'creator'])->findOrFail($id);
-        return response()->json($priceRequest);
-    }
+        try {
+            $priceRequest = PriceRequest::findOrFail($id);
 
-    // Update a price request
-    public function update(Request $request, $id)
-    {
-        $priceRequest = PriceRequest::findOrFail($id);
-
-        $validated = $request->validate([
-            'customer_notes' => 'nullable|string',
-            'company_id' => 'sometimes|exists:companies,id',
-            'created_by' => 'sometimes|exists:users,id',
-            'image' => 'nullable|image|max:2048',
-            'status' => 'in:pending,approved,rejected',
-        ]);
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('price_requests', 'public');
+            return response()->json([
+                'status' => 'success',
+                'data' => $priceRequest
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Price request not found'
+            ], 404);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
         }
-
-        $priceRequest->update($validated);
-
-        return response()->json($priceRequest);
     }
 
-    // Delete a price request (soft delete)
-    public function destroy($id)
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, string $id)
     {
-        $priceRequest = PriceRequest::findOrFail($id);
-        $priceRequest->delete();
+        try {
+            $priceRequest = PriceRequest::findOrFail($id);
 
-        return response()->json(['message' => 'Deleted successfully.']);
+            $validator = Validator::make($request->all(), [
+                'customer_notes' => 'nullable|string',
+                'company_id' => 'sometimes|exists:companies,id',
+                'created_by' => 'sometimes|exists:users,id',
+                'image' => 'nullable|image|max:2048',
+                'status' => 'nullable|in:pending,approved,rejected'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $data = $validator->validated();
+
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('price_requests', 'public');
+            }
+
+            $priceRequest->update($data);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Price request updated successfully',
+                'data' => $priceRequest
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Price request not found'
+            ], 404);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        try {
+            $priceRequest = PriceRequest::findOrFail($id);
+            $priceRequest->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Price request deleted successfully'
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Price request not found'
+            ], 404);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $th->getMessage()
+            ], 500);
+        }
     }
 }
